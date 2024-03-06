@@ -11,6 +11,7 @@ router.use('/loggeduser',checkUserauth)
 
 
 //Public Root 
+router.post('/home',userController.home)
 router.post('/signup',userController.signup)
 router.post('/signin',userController.signin)
 router.post('/send-reset-password-link',userController.sndUserPsswrdLink)

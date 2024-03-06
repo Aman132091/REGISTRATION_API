@@ -5,7 +5,10 @@ const UserModel  = require('../models/user')
 const transporter = require('../config/emailConfig')
 
 
-
+//Home page
+const home = async(req,res)=>{
+    res.send("Welcome's you")
+}
 //SignUp API
 const signup = async(req,res)=>{
     const {name,email,password} = req.body
@@ -167,7 +170,7 @@ const updatePassword = async(req,res)=>{
         
     }
 }
-module.exports = {signup,signin,changePassword,loggedUser,sndUserPsswrdLink,updatePassword}
+module.exports = {signup,signin,changePassword,loggedUser,sndUserPsswrdLink,updatePassword,home}
 
 
 

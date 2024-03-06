@@ -1,4 +1,6 @@
-
+exports.home = async(req,res)=>{
+    res.render('homepage')
+}
 exports.signup = async (req , res)=>{
     res.render('signup')
 }
