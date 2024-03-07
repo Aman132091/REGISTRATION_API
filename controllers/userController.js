@@ -3,7 +3,7 @@ const bcryptjs = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const UserModel  = require('../models/user')
 const transporter = require('../config/emailConfig')
-const uOv = require('../models/uOv')
+const userOtpVerification = require('../models/userOtpVerification') //uOv
 // const nodemailer = require('nodemailer')
 
 
@@ -184,29 +184,29 @@ const sendOtp = async (req, res) => {
         const user = await UserModel.findOne({ email });
 
         if (user) {
-            // Generate OTP (using a placeholder method, replace this with your actual OTP generation logic)
+            // Generate OTP 
             const otp = Math.floor(1000 + Math.random() * 9000);
 
             try {
-                // Save OTP in the user model (assuming you have an 'otp' field in your user model)
+                // Save OTP in model(user)
                 const salt = await bcryptjs.genSalt(10);
                 const hashedOtp = await bcryptjs.hash(otp.toString(), salt);
 
                 user.otpHash = hashedOtp;
                 await user.save();
 
-                // Send OTP to the user (using your preferred method, e.g., via email or SMS)
+                // Send OTP to user 
                 const info = await transporter.sendMail({
                     from: process.env.EMAIL_FROM,
                     to: user.email,
                     subject: "Your OTP for Verification",
-                    text: `Your OTP is: ${otp}`,
+                    text: `Your OTP is: ${otp} Expires in 15 min `,
                 });
 
                 res.send({
                     status: "success",
                     message: "OTP sent successfully",
-                    info, // Sending email info in the response for testing purposes, you may remove this in a production environment
+                    info, 
                 });
             } catch (error) {
                 console.log('error:', error);
@@ -218,22 +218,104 @@ const sendOtp = async (req, res) => {
     } else {
         res.send({ status: "failed", message: "Email field is required" });
     }
-};
+}
 
 
-// module.exports = {
-//     home,
-//     signup,
-//     signin,
-//     changePassword,
-//     loggedUser,
-//     sndUserPsswrdLink,
-//     updatePassword,
-//     sendOtp, // Add the sendOtp function to the exports
-// };
-    
+const verifyOtp = async (req, res) => {
+    const { email, otp } = req.body
 
-module.exports = {signup,signin,changePassword,loggedUser,sndUserPsswrdLink,updatePassword,home,sendOtp}
+    if (email && otp) {
+        try {
+            const user = await UserModel.findOne({ email })
+
+            if (user) {
+                // Compare the provided OTP with the hashed OTP in the user model
+                const isOtpValid = await bcryptjs.compare(otp.toString(), user.otpHash)
+
+                if (isOtpValid) {
+                    // Clear the OTP and OTP hash in the user model after successful verification
+                    user.otp = null
+                    user.otpHash = null
+                    await user.save()
+
+                    res.send({
+                        status: "success",
+                        message: "OTP verification successful",
+                    });
+                } else {
+                    res.send({
+                        status: "failed",
+                        message: "Invalid OTP",
+                    });
+                }
+            } else {
+                res.send({
+                    status: "failed",
+                    message: "Email Not found",
+                });
+            }
+        } catch (error) {
+            console.log('error:', error)
+            res.send({
+                status: "failed",
+                message: "Error verifying OTP",
+            });
+        }
+    } else {
+        res.send({
+            status: "failed",
+            message: "Email and OTP fields are required",
+        })
+    }
+}
+
+// const verifyOTP = async(req,res)=>{
+//     const {email,otp} = req.body
+
+//     if (email && otp){
+//         try {
+//             const user = await UserModel.findOne({email})
+//             if(user){
+//                 const otpValid = await bcryptjs.compare(otp.toString(),otp.otpHash)
+//                 if(otpValid){
+//                     user.otp=null,
+//                     user.otpHash=null,
+//                     await user.save()
+//                     res.send({status:"success",message:"Otp verified"})
+//                 }else{
+//                     res.send({status:"failed",message:"OTP not valid or may be expired"})
+//                 }
+//             }else{
+//                 res.send({status:"failed",message:"user not found"})
+//             }
+//         } catch (error) {
+//             res.send({status:"catch error",error:error.message})
+            
+//         }
+        
+//         //     const user = await UserModel.findOne({email})
+//         // if(user){
+//         //     const otpValid = await bcryptjs.compare(otp.toString(),otp.otpHash)
+//         //     if(otpValid){
+//         //         user.otp= null,
+//         //         user.otpHash = null,
+//         //         await user.save()
+//         //         res.send({status:"success",message:"OTP Verified"})
+//         //     }else{
+//         //         res.send({status:"failed",message:"OTP not valid or may be expired"})
+//         //     }
+//         // }else{
+//         //     res.send({status:"failed",message:"user not found"})
+//         // }
+//         // }else{
+//         //     res.send({status:"failed",message:"Email or OTP not valid....."})
+//         //  }
+        
+//     }else{
+//         res.send({status:"failed",message:"Email or OTP not valid....."})
+//     }
+// }
+module.exports = {signup,signin,changePassword,loggedUser,sndUserPsswrdLink,updatePassword,home,sendOtp,verifyOtp}
 
 
 
