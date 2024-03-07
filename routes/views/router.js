@@ -6,7 +6,7 @@ route.get("/signup" , signup)
 route.get('/signin', signin)
 route.get('/resetlink',resetlink)
 route.get('/update',update)
-route.get('/home',home)
+route.get('/homepage',home)
 
 
 module.exports = route

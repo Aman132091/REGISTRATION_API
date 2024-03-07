@@ -3,6 +3,8 @@ const bcryptjs = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const UserModel  = require('../models/user')
 const transporter = require('../config/emailConfig')
+const uOv = require('../models/uOv')
+// const nodemailer = require('nodemailer')
 
 
 //Home page
@@ -11,7 +13,7 @@ const home = async(req,res)=>{
 }
 //SignUp API
 const signup = async(req,res)=>{
-    const {name,email,password} = req.body
+    const {username,email,password} = req.body
     
 
     const user = await UserModel.findOne({email}) //match email present or not provided by user
@@ -19,19 +21,23 @@ const signup = async(req,res)=>{
         res.send({"status":"failed","message":"Email already exists"})
         
     } else {
-        if(name && email && password){
+        if(username && email && password){
             try {
                 const salt = await bcryptjs.genSalt(10)
                 const hashPassword = await bcryptjs.hash(password,salt)
                 const newUser = new UserModel({
 
-                    name:name,
+                    username:username,
                     email:email,
                     password:hashPassword
                     
 
                 })
                 await newUser.save()
+                //SOVE
+                // .then((result)=>{
+                //     sOve(result,res)
+                // })
                 const savedUser = await UserModel.findOne({email})
 
                 //generate jwt token
@@ -170,7 +176,64 @@ const updatePassword = async(req,res)=>{
         
     }
 }
-module.exports = {signup,signin,changePassword,loggedUser,sndUserPsswrdLink,updatePassword,home}
+
+const sendOtp = async (req, res) => {
+    const { email } = req.body;
+
+    if (email) {
+        const user = await UserModel.findOne({ email });
+
+        if (user) {
+            // Generate OTP (using a placeholder method, replace this with your actual OTP generation logic)
+            const otp = Math.floor(1000 + Math.random() * 9000);
+
+            try {
+                // Save OTP in the user model (assuming you have an 'otp' field in your user model)
+                const salt = await bcryptjs.genSalt(10);
+                const hashedOtp = await bcryptjs.hash(otp.toString(), salt);
+
+                user.otpHash = hashedOtp;
+                await user.save();
+
+                // Send OTP to the user (using your preferred method, e.g., via email or SMS)
+                const info = await transporter.sendMail({
+                    from: process.env.EMAIL_FROM,
+                    to: user.email,
+                    subject: "Your OTP for Verification",
+                    text: `Your OTP is: ${otp}`,
+                });
+
+                res.send({
+                    status: "success",
+                    message: "OTP sent successfully",
+                    info, // Sending email info in the response for testing purposes, you may remove this in a production environment
+                });
+            } catch (error) {
+                console.log('error:', error);
+                res.send({ status: "failed", message: "Error saving OTP" });
+            }
+        } else {
+            res.send({ status: "failed", message: "Email Not found" });
+        }
+    } else {
+        res.send({ status: "failed", message: "Email field is required" });
+    }
+};
+
+
+// module.exports = {
+//     home,
+//     signup,
+//     signin,
+//     changePassword,
+//     loggedUser,
+//     sndUserPsswrdLink,
+//     updatePassword,
+//     sendOtp, // Add the sendOtp function to the exports
+// };
+    
+
+module.exports = {signup,signin,changePassword,loggedUser,sndUserPsswrdLink,updatePassword,home,sendOtp}
 
 
 
